@@ -1,5 +1,4 @@
 import { useState } from "react";
-
 import { submitYoutubeUrl } from "./api/client.js";
 
 const SAMPLE_URLS = [
@@ -20,7 +19,7 @@ export default function App() {
 
     const trimmed = url.trim();
     if (!trimmed) {
-      setError("Paste a YouTube URL to continue.");
+      setError("Please enter a valid YouTube URL.");
       return;
     }
 
@@ -29,7 +28,7 @@ export default function App() {
       const response = await submitYoutubeUrl(trimmed);
       setResult(response);
     } catch (submitError) {
-      setError(submitError.message || "Failed to submit the URL.");
+      setError(submitError.message || "Failed to process the video. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -42,76 +41,93 @@ export default function App() {
   return (
     <div className="page">
       <header className="hero">
-        <span className="badge">LangGraph + FastAPI</span>
+        <span className="badge">AI Powered Workflow</span>
         <h1>Lightcone Studio</h1>
         <p>
-          Drop in a YouTube link to queue a processing workflow and generate
-          downstream insights.
+          Transform YouTube videos into concise summaries using the power of Gemini 1.5 Pro.
+          Multimodal processing for accurate insights.
         </p>
       </header>
 
       <main className="panel">
         <form className="form" onSubmit={handleSubmit}>
-          <label htmlFor="youtube-url">YouTube URL</label>
-          <div className="input-row">
+          <div className="input-group">
             <input
-              id="youtube-url"
+              className="input-field"
               type="url"
-              placeholder="https://www.youtube.com/watch?v=..."
+              placeholder="Paste YouTube URL here..."
               value={url}
-              onChange={(event) => setUrl(event.target.value)}
+              onChange={(e) => setUrl(e.target.value)}
+              disabled={isSubmitting}
               autoComplete="off"
-              required
             />
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Sending…" : "Queue video"}
+            <button 
+              className="submit-btn" 
+              type="submit" 
+              disabled={isSubmitting || !url.trim()}
+            >
+              {isSubmitting ? <span className="loading-dots">Processing</span> : "Generate Summary"}
             </button>
           </div>
-          <div className="hint">
-            <span>Try a sample:</span>
+          
+          <div className="samples">
             {SAMPLE_URLS.map((sample) => (
               <button
                 key={sample}
-                className="chip"
                 type="button"
+                className="sample-chip"
                 onClick={() => handleSample(sample)}
+                disabled={isSubmitting}
               >
-                {sample.replace("https://", "")}
+                Sample: {sample.split('v=')[1] || sample.split('/').pop()}
               </button>
             ))}
           </div>
         </form>
 
-        {error ? (
-          <section className="status error">
-            <h2>Submission failed</h2>
-            <p>{error}</p>
-          </section>
-        ) : null}
-
-        {result ? (
-          <section className="status success">
-            <div>
-              <h2>Queued</h2>
-              <p>{result.message}</p>
+        {error && (
+          <div className="result-card error">
+            <div className="result-header">
+              <span className="result-title">Error</span>
             </div>
-            <div className="meta">
-              <div>
-                <span>Request ID</span>
+            <p>{error}</p>
+          </div>
+        )}
+
+        {result && (
+          <div className={`result-card ${result.status === 'failed' ? 'error' : ''}`}>
+            <div className="result-header">
+              <span className="result-title">
+                {result.status === 'completed' ? 'Analysis Complete' : 'Processing Failed'}
+              </span>
+            </div>
+
+            <div className="meta-grid">
+              <div className="meta-item">
+                <label>Request ID</label>
                 <strong>{result.request_id}</strong>
               </div>
-              <div>
-                <span>Received URL</span>
+              <div className="meta-item">
+                <label>Video URL</label>
                 <strong>{result.received_url}</strong>
               </div>
             </div>
-          </section>
-        ) : null}
+
+            {result.summary && (
+              <div className="summary-content">
+                {result.summary}
+              </div>
+            )}
+            
+            {result.error && (
+              <p>{result.error}</p>
+            )}
+          </div>
+        )}
       </main>
 
       <footer className="footer">
-        <span>API target</span>
-        <strong>{import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1"}</strong>
+        <p>Powered by LangGraph & Google Gemini 1.5 Pro</p>
       </footer>
     </div>
   );

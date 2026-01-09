@@ -12,3 +12,5 @@ class YouTubeResponse(BaseModel):
     message: str
     request_id: str
     received_url: str
+    summary: str | None = None
+    error: str | None = None
